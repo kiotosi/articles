@@ -49,11 +49,11 @@
 
 ```svelte
 <script>
-// Новое состояние name
-let name = 'Daniil';
+  // Новое состояние name
+  let name = 'Daniil';
 
-// Новое неизменяемое состояние
-const age = 20;
+  // Новое неизменяемое состояние
+  const age = 20;
 </script>
 ```
 
@@ -76,7 +76,7 @@ const age = 20;
 ```svelte
 <script>
 // Состояние, которое хранит имя
-const name = 'Daniil';
+  const name = 'Daniil';
 </script>
 
 <h1>Hello, { name }</h1>
@@ -87,7 +87,7 @@ const name = 'Daniil';
 
 ```svelte
 <script>
-const age = 20;
+  const age = 20;
 </script>
 
 <div>
@@ -96,12 +96,22 @@ const age = 20;
 </div>
 ```
 
+Также мы можем вставлять HTML с помощью модификатора `@html`:
+
+```svelte
+<script>
+  const htmlCode = 'Hello, <strong>world!</strong>';
+</script>
+
+<span>{@html htmlCode}</span>
+```
+
 ## Атрибуты
 Интерполяция работает с атрибутами точно также, как и с текстом внутри элемента:
 
 ```svelte
 <script>
-const imageSource = '/img/1.jpg';
+  const imageSource = '/img/1.jpg';
 </script>
 
 <img src={src} alt="Default image alt">
@@ -109,7 +119,147 @@ const imageSource = '/img/1.jpg';
 <img {src} alt="Default image alt">
 ```
 
+## Условный рендеринг
+В HTML нет условий, в Svelte они есть. Использовать условный рендеринг можно следующим образом:
+
+```svelte
+<script>
+  const hasButton = false;
+</script>
+
+<div>
+  {#if hasButton}
+  <!-- Если переменная hasButton равна false, то данный кусок шаблона не отобразится -->
+	  <button>
+	  	Log in
+	  </button>
+
+  {:else}
+  <!-- Вместо первого шаблона - отобразится данный шаблон -->
+    <div>Тут нет кнопки :(</div>
+  {/if}
+</div>
+```
+> Также мы можем использовать `{:else if <условие>}`, для того чтобы задать дополнительный логический блок. Прямо как `else if` в JS.
+
+## Цикличный рендеринг
+Также как и с условным рендерингом - в Svelte есть цикличный рендеринг. Он позволяет проходится по спискам и для каждого элемента рендерить одну и ту же верстку:
+
+```svelte
+<script>
+  const names = ['Alex', 'Alexo', 'Nina', 'Jeff'];
+</script>
+
+<div>
+  Список имен:
+  <ul>
+    <!-- Читается как: для каждого элемента names, который именуется как name -->
+    {#each names as name}
+      <li> { name } </li>
+    {/each}
+  </ul>
+</div>
+```
+
+Данный кусок кода выведет следующий список в HTML:
+```html
+<div>
+  Список имен:
+  <ul>
+    <li>Alex</li>
+    <li>Alexo</li>
+    <li>Nina</li>
+    <li>Jeff</li>
+  </ul>
+</div>
+```
+
+### Изменяемый список
+В случае если список изменяется - нужно дать каждом элементу `id`, для того чтобы Svelte лучше управлялся с такими элементами и рендерил все правильно:
+
+```svelte
+<script>
+  const names = ['Alex', 'Alexo', 'Nina', 'Jeff'];
+</script>
+
+<div>
+  Список имен:
+  <ul>
+    <!-- В качестве id может быть строка, число или объект -->
+    <!-- ID указывается в круглых скобках сразу после названия элемента -->
+    <!-- В данном случае мы как ID передали индекс в массиве-->
+    {#each names as name, index (index)}
+      <li> { name } </li>
+    {/each}
+  </ul>
+</div>
+```
+
+## Асинхронный блок
+Svelte позволяет нам отрисовывать разный шаблон по мере жизнедеятельности промиса:
+
+```svelte
+<script>
+
+  /**
+   * Получает случайного персонажа из Rick And Morty
+   */
+	async function getCharacter() {
+		const res = await fetch(`https://rickandmortyapi.com/api/character/${Math.floor(Math.random() * 600)}`);
+		const text = await res.text();
+
+		if (res.ok) {
+			return text;
+		} else {
+			throw new Error(text);
+		}
+	}
+
+  // Сразу получаем персонажа при отрисовке
+	let promise = getCharacter();
+
+  /**
+   * Метод, при вызове которого подгружается новый случайный персонаж
+   */
+	function handleClick() {
+		promise = getCharacter();
+	}
+</script>
+
+<!-- При клике на кнопку вызывается метод handleClick -->
+<button on:click={handleClick}>
+	generate random number
+</button>
+
+<!-- Асинхронный блок -->
+{#await promise}
+<p>Данные запрашиваются</p>
+{:then data}
+<code>
+	{data}
+</code>
+{:catch error}
+<p>
+	Данные не получены :(
+</p>
+{/await}
+```
+
+> Обратите внимание, что:
+> - `#` в начале названия блока используется для объвления блока
+> - `:` в начале названия блока используется для того чтобы продлить блок
+> - `/` в начале названия блока используется для того чтобы закрыть блок
+
 # Импортирование компонентов
+Можно импортировать компоненты в другие компоненты:
+```svelte
+<script>
+  import Button from './Button.svelte';
+</script>
+
+<Button />
+```
+
 # Пропсы
 
 > **Пропсы** - данные, которые компонент берет из родительского компонента. Пропсы передаются как атрибут при использовании компонента.
@@ -120,10 +270,12 @@ const imageSource = '/img/1.jpg';
 <!-- Hello.svelte -->
 <script>
   export let name = 'John';
+  export let age = 0;
 </script>
 
 <div>
   Hello, { name }
+  Your age is { age }
 </div>
 ```
 
@@ -136,10 +288,10 @@ const imageSource = '/img/1.jpg';
 </script>
 
 <div>
-  <!-- Выведется "Hello, Daniil" -->
-  <Hello name="Daniil" /> 
+  <!-- Выведется "Hello, Daniil Your age is 20" -->
+  <Hello name="Daniil" age=20 /> 
 
-  <!-- Выведется "Hello, John", ибо мы не передали пропс -->
+  <!-- Выведется "Hello, John Your age is 0", ибо мы не передали пропс -->
   <Hello /> 
 </div>
 ```
@@ -153,6 +305,23 @@ const imageSource = '/img/1.jpg';
 > </script>
 > ```
 > то svelte будет жаловаться.
+
+Если мы хотим передать сразу несколько пропсов, которые находятся внутри объекта и имена свойств совпадают с именами пропсов, то мы можем использовать spread-оператор:
+
+```svelte
+<!-- App.svelte -->
+<script>
+import Hello from './Hello.svelte';
+const person = {
+  name: 'Daniil',
+  age: 20
+};
+</script>
+
+<div>
+  <Hello {...person} />
+</div>
+```
 
 <!--
   TODO: Написать про [export const; export function]
@@ -207,8 +376,8 @@ function niceRender() {
 
 ```svelte
 <script>
-export let name = '';
-let uppercaseName = name.toUpperCase();
+  export let name = '';
+  let uppercaseName = name.toUpperCase();
 </script>
 ```
 
@@ -248,8 +417,8 @@ $: {
 
 ```svelte
 <script>
-export let name = '';
-$: uppercaseName = name.toUpperCase();
+  export let name = '';
+  $: uppercaseName = name.toUpperCase();
 </script>
 ```
 
@@ -271,3 +440,235 @@ $: {
 </script>
 ```
 
+# Ивенты и директивы
+Мы уже видели как используется `on:click`.
+
+`on` используется для того чтобы определить какой-то ивент. Например:
+
+- `on:click` - сработает при клике
+- `on:keydown` - сработает при нажатии кнопки
+- `on:drag` - сработает при переносе чего-либо
+- `on:mouseenter` - сработает, когда мышь окажется внутри какого-то элемента
+
+Мы можем использовать в качестве обработчиков событий функции внутри компонента или писать стрелочные функции прямо внутри скобок:
+
+```svelte
+<script>
+	let m = { x: 0, y: 0 };
+</script>
+
+<div on:mousemove={ e => m = { x: e.clientX, y: e.clientY }}>
+	The mouse position is {m.x} x {m.y}
+</div>
+
+<style>
+	div { width: 100%; height: 100%; }
+</style>
+```
+
+## Модификаторы ивентов
+Мы можем использовать следующие модифкаторы:
+
+- `preventDefault` — вызывает `event.preventDefault()` перед тем как выполнить хэндлер.
+- `stopPropagation` — вызывает `event.stopPropagation()`, чтобы предотвратить всплытие.
+- `passive` — улучшает производительность при скролле (Svelte сам будет добавлять данный модификатор где это уместно)
+- `nonpassive` — отключает модификатор `passive`
+- `capture` — вызывает хэндлер во время фазы захвата, а не всплытия
+- `once` — хэндлер сработает только один раз
+- `self` — тригерит ивент, если пользователь провзаимодействовал только с элементом, на котором висит данный ивент (избегание всплытия)
+- `trusted` — тригерит ивент, если `event.isTrusted === true`
+
+Модификаторы указываются следующим образом:
+
+```svelte
+<script>
+	function handleClick() {
+		alert('clicked')
+	}
+</script>
+
+<button on:click|once={handleClick}>
+	Click me
+</button>
+```
+
+## Кастомные ивенты
+Иногда нам нужны кастомные ивенты, которые бы тригерили функции извне компонента. В Vue для этого есть `emit`, в Svelte - `eventDispatcher`.
+
+Допустим, что у родительского компонента нет доступа к состояниям дочернего компонента. Но, мы все же хотим получить оттуда какие-либо данные. Для этого мы создаем коллбэк, который будет с этими данными взаимодействовать (допустим выводить их с помощью `alert`):
+
+```svelte
+<!-- App.svelte -->
+<script>
+  import Subcomponent from './Subcomponent.svelte'
+  function handleMessage(message) {
+    alert(message);
+  }
+</script>
+
+<Subcomponent on:message={handleMessage} />
+```
+
+В дочернем компоненте мы при нажатии на кнопку будем посылать сообщение в родительский компонент:
+
+```svelte
+<!-- Subcomponent.svelte -->
+<script>
+  // Импортируем специальный метод, который создает dispatcher
+  // с помощью которого мы будем посылать наш ивент
+  import {createEventDispatcher} from 'svelte';
+  const dispatch = createEventDispatcher();
+
+  function handleClick() {
+    const message = 'Hello, World!';
+    dispatch('message', {message});
+  }
+</script>
+
+<button on:click={handleClick}>Click me!</button>
+```
+
+Теперь при клике на кнопку мы создадим специальный ивент, который вызовет коллбэк `handleMessage` из родительского компонента и передаст ему все данные, которые нам нужны.
+
+> К слову мы могли назвать ивент как хотим. Важно, чтобы первый аргумент в `dispatch()` и слово после `on:` совпадали.
+
+### Всплытие
+Кастомные ивенты не всплывают, но если нам нужно, чтобы они всплывали, то у каждого дочернего компонента в иерархии нужно указывать `on:message`. Это довольно редкий кейс, однако [подробнее можно узнать тут](https://svelte.dev/docs#template-syntax-element-directives-on-eventname)
+
+# Биндинги
+Биндинги существуют для того чтобы облегчать двухстороннее связывание.
+
+> Двухстороннее связывание - техника, которую в основном применяют к инпутам. Она связывает `value` и событие `oninput`, таким образом чтобы пользовательский ввод все время обновлял `value`.
+
+В Svelte это выглядит следующим образом:
+
+```svelte
+<script>
+  let inputValue = 'Write here!';
+
+  function handleInput(ev) {
+    inputValue = ev.target.value;
+  }
+</script>
+
+<input value={inputValue} on:input={handleInput} />
+
+<h1>{ inputValue }</h1>
+```
+
+Однако, все данные действия можно сделать намного проще с помощью инпутов:
+
+```svelte
+<script>
+  let inputValue = 'Write here!';
+</script>
+
+<!-- Связываем inputValue с вводимым значением с помощью bind -->
+<input bind:value={inputValue} />
+
+<h1>{ inputValue }</h1>
+```
+
+# Хуки
+Хуки - это методы, которые цепляются за жизненный цикл компонента.
+
+В Svelte существует следующие хуки:
+- `onMount` - хук, который выполняется как только компонент примонтировался к DOM-дереву
+- `beforeUpdate` - хук, который работает _перед_ тем как в компонент придут новые данные (например из пропсов)
+- `afterUpdate` - хук, который работает _после_ того, как в компонент пришли новые данные
+- `onDestroy` - хук, который работает когда компонент размонтируется (удаляется из DOM)
+
+```svelte
+<script>
+  onMount(() => {
+    console.log('Компонент только что примонтировался')
+  });
+</script>
+```
+
+Обычно хук `onMount` используют для того, чтобы подтянуть какие-то данные со сторонних сервисов с помощью `fetch` и использовать их внутри компонента.
+
+> Если использовать [SvelteKit](https://ru.kit.svelte.dev) (для рендеринга на стороне сервера) и расположить `fetch` внутри `onMount`, то данные будут запрашиваться на стороне клиента, а если просто внутри `<script>`, то запрос отправится еще на сервере.
+
+## Тик
+Все фреймворки для создания веб-приложений работают следующим образом:
+1. Сбор операций которые нужно выполнить пачкой
+2. Подбор времени для выполнения
+3. Оптимизация собраного стека
+4. Выполнение этих операций (**тик**)
+
+В Svelte тоже есть тики. Например, если мы используем специальный метод `tick` внутри хука `beforeUpdate`, то после выполнения мы уже будем находиться на ивенте `afterUpdate`:
+
+```svelte
+<script>
+  import {beforeUpdate, tick} from 'svelte';
+  
+  beforeUpdate(async() => {
+    console.log('Данное сообщение выводится до того как компонент обновится');
+    await tick();
+    console.log('Данное сообщение выводится после того как компонент обновится');
+  })
+
+</script>
+```
+
+# Сторы
+Как уже понятно - мы можем объявлять состояния внутри компонентов. Однако бывают ситуации, когда нам нужно использовать глобальные состояния, при обновлении которых компоненты также будут обновляться (перерендериваться). Для этого сторы и придумали.
+
+Самый простой стор, который можно придумать - счетчик, однако в сторы можно запихнуть и сложных структуры данных, тут стор используется для примера.
+
+Допустим что у нас есть два разных компонента:
+ - В одном из них мы управляем нашим счетчиком
+ - В другом мы используем значения из этого счетчика
+
+Мы можем объявлять счетчики вне компонентов в отдельных файлах JS/TS:
+```typescript
+import {writable} from 'svelte';
+export const counter = writable(0);
+```
+
+В данном компоненте мы будем управлять счетчиком:
+
+```svelte
+<!-- ControlCounter.svelte -->
+<script>
+  import { counter } from './counter.js'
+
+  /**
+   * Инкрементирует значение в сторе
+   */
+  function increment() {
+    counter.update(n => n + 1);
+  }
+
+  /**
+   * Декрементирует значение в сторе
+   */
+  function decrement() {
+    counter.update(n => n - 1);
+  }
+</script>
+
+<button on:click={increment}>Увеличить</button>
+<button on:click={decrement}>Уменьшить</button>
+```
+
+В данном компоненте мы будем отрисовывать счетчик:
+
+```svelte
+<script>
+  import { counter } from './counter.js';
+  let count;
+
+  // Подписываемся на обновления в сторе
+  counter.subscribe(value => {
+    count = value;
+  });
+</script>
+
+<h1>Счетчик: { count }</h1>
+```
+
+Если мы будем подписываться на счетчик, то нам нужно будет отписаться от него с помощью `unsubscribe`, когда компонент размонтируется.
+
+Чтобы не делать этого мы можем просто использовать стор добавив к его названию `$` - `$counter`.
